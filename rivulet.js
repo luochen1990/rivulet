@@ -24,7 +24,7 @@
         };
 
         Signal.prototype.trigger = function(e) {
-          return $(document).trigger(this._symbol, e);
+          return $(document).triggerHandler(this._symbol, [e]);
         };
 
         Signal.prototype.register = function(handler) {
@@ -147,8 +147,18 @@
 
     Behavior.prototype.apply = function(use) {
       use(this._value);
-      return this.changeE["do"](function(v) {
-        return use(v);
+      return this.changeE["do"](function(_arg) {
+        var new_value, old_value;
+        new_value = _arg[0], old_value = _arg[1];
+        return use(new_value);
+      });
+    };
+
+    Behavior.prototype.watch = function(callback) {
+      return this.changeE["do"](function(_arg) {
+        var new_value, old_value;
+        new_value = _arg[0], old_value = _arg[1];
+        return callback(new_value, old_value);
       });
     };
 
@@ -183,9 +193,10 @@
   extractB = function(interval, get_value, equal) {
     var behav;
     behav = new Behavior(get_value(), equal);
-    return behav.update(timerE(interval), function(e) {
+    behav.update(timerE(interval), function(e) {
       return get_value();
     });
+    return behav;
   };
 
   EventStream.prototype.transferE = function(transfer) {
@@ -267,11 +278,6 @@
 
   EventStream.prototype.mapE = function(f) {
     var event_stream;
-    if (f == null) {
-      f = (function(e) {
-        return e;
-      });
-    }
     event_stream = new EventStream;
     this["do"](function(e) {
       return event_stream.push(f(e));
@@ -381,7 +387,7 @@
     behavior = new Behavior(get_value(), equal);
     for (_j = 0, _len = behav_ls.length; _j < _len; _j++) {
       behav = behav_ls[_j];
-      behavior.update(behav.changeE(), get_value);
+      behavior.update(behav.changeE, get_value);
     }
     return behavior;
   };
@@ -399,7 +405,7 @@
     })();
   } else {
     $(document).ready(function() {
-      var bh1, es1, es2, es3, es3_, es4, es5;
+      var bh1, es1, es2, es4, es5;
       log('BEGIN');
       es1 = extractE('#btn_a', 'click').mapE(function(it) {
         return it.target;
@@ -407,24 +413,7 @@
       es2 = extractE('#btn_b', 'click').mapE(function(it) {
         return it.target;
       });
-      es3 = timerE(1);
-      es3_ = es3.transferE(function(es) {
-        var cnt;
-        cnt = 0;
-        return function(e) {
-          cnt += e;
-          return es.push(cnt);
-        };
-      });
-      es3_["do"](function(sum) {
-        return log(function() {
-          return sum;
-        });
-      });
-      EventStream.mergeE(es1, es2, es3).blinkE(5, -1)["do"](function(e) {
-        return log(e);
-      });
-      es1["do"](function(e) {
+      EventStream.mergeE(es1, es2)["do"](function(e) {
         return log(function() {
           return e;
         });
@@ -439,6 +428,12 @@
       bh1 = new Behavior('hello');
       bh1.update(EventStream.mergeE(es4, es5), function(e, v) {
         return float($('#ipt_a').val()) + float($('#ipt_b').val());
+      });
+      log(function() {
+        return bh1;
+      });
+      log(function() {
+        return bh1.changeE;
       });
       log($('#lab_a'));
       log($('#lab_a').text);

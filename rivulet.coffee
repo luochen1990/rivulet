@@ -13,7 +13,7 @@ Signal = do ->
 			constructor: () -> @_symbol = gensym()
 			name: -> @_symbol
 			trigger: (e) ->
-				$(document).trigger @_symbol, e
+				$(document).triggerHandler @_symbol, [e]
 			register: (handler) ->
 				f = (_, e) -> handler(e)
 				$(document).on @_symbol, f
@@ -56,7 +56,9 @@ class Behavior
 				@_value = new_value
 	apply: (use) ->
 		use(@_value)
-		@changeE.do (v) -> use(v)
+		@changeE.do ([new_value, old_value]) -> use(new_value)
+	watch: (callback) ->
+		@changeE.do ([new_value, old_value]) -> callback(new_value, old_value)
 
 ################# basic event/behavior source ####################
 
@@ -80,6 +82,7 @@ extractB = (interval, get_value, equal) ->
 	behav = new Behavior(get_value(), equal)
 	behav.update timerE(interval), (e) ->
 		get_value()
+	behav
 
 ##################################################################
 
@@ -112,7 +115,7 @@ EventStream.zipE = (es_ls...) ->
 				v.splice(0, 1) for k, v of buffers
 				pending_count += 1 for k, v of buffers when v.length == 0
 
-EventStream::mapE = (f = ((e) -> e)) ->
+EventStream::mapE = (f) ->
 	event_stream = new EventStream
 	@do (e) ->
 		event_stream.push f(e)
@@ -174,7 +177,7 @@ mapB = (f, behav_ls..., equal) ->
 	get_value = -> f((behav.value() for behav in behav_ls)...)
 	behavior = new Behavior(get_value(), equal)
 	for behav in behav_ls
-		behavior.update behav.changeE(), get_value
+		behavior.update behav.changeE, get_value
 	behavior
 
 ##################################################################
@@ -193,21 +196,21 @@ else
 		log 'BEGIN'
 		es1 = extractE('#btn_a', 'click').mapE((it) -> it.target)
 		es2 = extractE('#btn_b', 'click').mapE((it) -> it.target)
-		es3 = timerE(1)
+		#es3 = timerE(1)
 
-		es3_ = es3.transferE (es) ->
-			cnt = 0
-			(e) ->
-				cnt += e
-				es.push cnt
+		#es3_ = es3.transferE (es) ->
+		#	cnt = 0
+		#	(e) ->
+		#		cnt += e
+		#		es.push cnt
 
-		es3_.do (sum) ->
-			log -> sum
+		#es3_.do (sum) ->
+		#	log -> sum
 
-		EventStream.mergeE(es1, es2, es3).blinkE(5, -1).do (e) ->
-			log e
+		#EventStream.mergeE(es1, es2, es3).blinkE(5, -1).do (e) ->
+		#	log e
 
-		es1.do (e) ->
+		EventStream.mergeE(es1, es2).do (e) ->
 			log -> e
 
 		es4 = extractE('#ipt_a', 'keydown')
@@ -220,6 +223,9 @@ else
 		bh1.update EventStream.mergeE(es4, es5), (e, v) ->
 			float($('#ipt_a').val()) + float($('#ipt_b').val())
 
+		log -> bh1
+		log -> bh1.changeE
+
 		log $('#lab_a')
 		log $('#lab_a').text
 		#bh1.apply $('#lab_a').text
@@ -228,3 +234,42 @@ else
 			$('#lab_a').text(v)
 		bh1.apply (v) -> $('#ipt_c').val(v)
 
+
+## UI TESTING FRAMEWORK
+#		pack_event = (e) ->
+#			[e.target, e.type, dict([k, e[k]] for k in ['target', 'keyCode', 'metaKey', 'altKey', 'ctrlKey', 'shiftKey'])]
+#		unpack_event = (obj) ->
+#			log -> obj
+#			jQuery.Event(obj.second, obj.third)
+#
+#		class Emulator
+#			constructor: (@bh_ls...) ->
+#				@records = []
+#				log => @bh_ls
+#				change_es = (bh.changeE.mapE(([v, old_v]) -> ['B', v]) for bh in @bh_ls)
+#				es = EventStream.mergeE(extractE(window, 'keydown click').mapE((e) -> ['E', pack_event(e)]), change_es...)
+#				es.do (e) =>
+#					log -> e
+#					@records.push e
+#			get_record: ->
+#				json @records
+#			play_record: (records_s) ->
+#				for r in obj records_s
+#					if r.first == 'E'
+#						log.info -> unpack_event r.second
+#						$(window).trigger(unpack_event r.second)
+#					else if r.first == 'B'
+#						log.info -> r
+#
+#		emu = new Emulator(extractB(0.05, (-> $('#ipt_c').val())), extractB(0.05, (-> $('lab_a').val())))
+#
+#		record = null
+#		$('#stopRecord').on 'click', ->
+#			record = emu.get_record()
+#			log -> 'Records:'
+#			log.info -> record
+#
+#		$('#playRecord').on 'click', ->
+#			emu.play_record(record)
+#			#window.trigger obj recorder
+#
