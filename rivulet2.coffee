@@ -49,10 +49,10 @@ class EventStream
 
 ######################### basic event ############################
 
-church_zero = ((x) -> x)
+church_one = ((x) -> x)
 
 extractE = (elem_selector, event_name) ->
-	event_stream = new EventStream([church_zero, new Signal])
+	event_stream = new EventStream([church_one, new Signal])
 	$(elem_selector).on event_name, (e) ->
 		setTimeout -> event_stream.mapf_signal_pairs[0][1].trigger e
 	event_stream
@@ -61,7 +61,7 @@ timerE = (interval) ->
 	time = do ->
 		t = -1
 		(-> ++t)
-	event_stream = new EventStream([church_zero, new Signal])
+	event_stream = new EventStream([church_one, new Signal])
 	alarm = ->
 		event_stream.mapf_signal_pairs[0][1].trigger time() #the first one with time = 0 was triggered when the ES instance created, and will hardly be captured.
 		setTimeout alarm, interval * 1000
