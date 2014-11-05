@@ -1,0 +1,23 @@
+{
+  "name": "rivulet",
+  "version": "0.0.1",
+  "description": "a FRP lib for javascript",
+  "author": "luochen1990",
+  "license": "BSD",
+  "homepage": "http://github.com/luochen1990/rivulet",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:luochen1990/rivulet.git"
+  },
+  "keywords": [
+    "FRP",
+    "Functional Reactive Programming",
+    "FP",
+    "Functional Programming",
+    "lightweight"
+  ],
+  "main": "./rivulet.coffee",
+  "dependencies": {
+	  "coffee-mate": "^0.6.0"
+  }
+}

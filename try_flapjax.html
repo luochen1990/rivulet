@@ -1,0 +1,53 @@
+<html>
+<head>
+
+
+<link rel="stylesheet" href="http://www.flapjax-lang.org/demo.css"/>
+<script type="text/javascript" src="http://www.flapjax-lang.org/fx/flapjax.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/coffee-script/1.7.1/coffee-script.min.js"></script>
+
+<title>Flapjax Demo: Time 2</title>
+
+<script type="text/coffeescript">
+window.loader = ->
+	T = timerB(100)
+	insertDomB(T, 'T')
+
+	A = liftB(((x) -> 1 + x), T)
+	insertDomB(A, 'A')
+
+	B = liftB(((x) -> 1 - x), T)
+	insertDomB(B, 'B')
+
+	C = liftB(((a, b) -> a + b), A, B)
+	insertDomB(C, 'C')
+
+	esC = changes(C)
+	#mapE(((x) -> console.log(x)), esC) #直接通过对behavior计算得到，不会导致闪烁
+
+	f = do ->
+		last = {x: 1, y: 1}
+		(e) ->
+			last[e[0]] = e[1]
+			last.x + last.y
+
+	esA = changes(A)
+	esB = changes(B)
+	D = startsWith(mapE(f, mergeE(mapE(((x) -> ['x', x]), esA), mapE(((y) -> ['y', y]), esB)), 2))
+	insertDomB(D, 'D')
+
+	esD = changes(D)
+	mapE(((x) -> console.log(x)), esD) #通过change事件更新维护一个新的behavior的值，仍然会导致闪烁，即使A和B的change事件发生都是由于T的change导致的
+</script>
+
+</head>
+
+<body onload="loader()">
+<p>The T (or time) is     <span class="fixedBlock"><span id="T">not initialized</span></span>.</p>
+<p>The A (or 1 + time) is <span class="fixedBlock"><span id="A">not initialized</span></span>.</p>
+<p>The B (or 1 - time) is <span class="fixedBlock"><span id="B">not initialized</span></span>.</p>
+<p>The C (or A + B) is    <span class="fixedBlock"><span id="C">not initialized</span></span>.</p>
+<p>The D (or A + B) is    <span class="fixedBlock"><span id="D">not initialized</span></span>.</p>
+</body>
+
+</html>
